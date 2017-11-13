@@ -1,0 +1,339 @@
+---
+title: "Markdown and tidyverse workshop for lab"
+subtitle: "Look, with Markdown you can add subtitles easily!"
+author: John M. Mola
+date: 'Updated: `r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document:
+    df_print: paged
+---
+
+***
+
+```{r, include=FALSE}
+require(tidyverse)
+```
+
+### Outline
+***
+1. What and why Markdown
+2. Markdown basics
+3. What and why tidyverse
+4. tibble, pipes!!, dplyr, tidyr, readr
+
+***
+
+### What is Markdown and why use it?
+
+> R Markdown provides an authoring framework for data science. You can use a single R Markdown file to both:
+>
+> * save and execute code
+> * generate high quality reports that can be shared with an audience
+>
+> R Markdown documents are fully reproducible and support dozens of static and dynamic output formats.
+
+Code and comments in a more readable format, works well with version control repositories (like git), allows to you test code in chunks (clean environment!), and just a whole lot more convenience than back and forth between R and Word (especially when someone critiques your figures!). 
+
+You can `knit` to html, PDF, or Word (probably others, too). 
+
+**Some examples of things in Markdown:**
+
+* This document.
+* [My website](http://johnmola.com)
+* [My CV](http://johnmola.com/pdfs/Mola_CV.pdf)
+* [Every vignette you've ever looked at](https://rforcats.net/)
+* [Entire books, slide shows, more....](http://rmarkdown.rstudio.com/gallery.html)
+
+![You can easily add images and gifs!!](cats.gif)
+
+***
+
+### Markdown Basics
+
+
+#### Code is organized into "chunks"
+
+##### Here's a basic chunk:
+
+```{r}
+summary(iris)
+qqplot(iris$Petal.Length,iris$Petal.Width)
+```
+
+***
+
+##### Here's a chunk with some options applied:
+
+```{r chunk.name, echo=FALSE, fig.width=4,fig.height=4}
+summary(iris)
+qqplot(iris$Petal.Length,iris$Petal.Width)
+```
+
+***
+
+##### These are the most common chunk options...but there's tons.   
+(*This is a good time to learn about tab complete!*)
+
+* `include = FALSE` Runs the chunk, but doesn't show results or code.
+* `echo = FALSE` Shows the results, but not the code.
+* `message = FALSE` Suppresses any messages.
+* `warning = FALSE` Suppresses warnings.
+* `fig.cap = "blah blah blah"` Easily add a caption to your figures. 
+
+You can also set global options (they apply to all chunks) using `knitr`   
+e.g. `knitr::opts_chunk$set(echo=TRUE)`
+
+***
+
+#### You can pass several programming languages to chunks. `bash`, `perl`, `python`, `R`, etc.
+
+```{bash}
+ls *.gif
+```
+
+***
+
+#### You can make tables easily too (using a package like `knitr` or `pander`)
+
+```{r message=FALSE}
+require(pander)
+pander(head(iris), caption = "A table made with pander")
+```
+
+***
+
+# Oh yeah, 
+
+> you can obviously make block quotes or text that is
+
+**bold** or *italic*, etc. Check out the [R Markdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf). 
+
+***
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+
+
+# tidyverse!
+
+***
+
+#### This run-through made using lots of notes from Michael Levy and Ryan Peek!
+
+***
+
+### What is it?
+
+`tidyverse` is really just a collection of packages. There's core packages, which you'll likely use, and then other more specific packages. 
+
+`install.packages(tidyverse)` will install all of the ~20 packages
+
+`library(tidyverse)` attaches the core packages only:
+
+* dplyr
+* tidyr
+* ggplot2
+* readr
+* purrr
+* tibble
+
+### Follows a consistent philosophy -- Tidy data
+
+Data goes into data frames
+
+* Each type of observation gets a data frame
+* Each variable gets a column
+* Each observation gets a row
+
+###### Note: This idea should already be really familiar if you use `ggplot2` for making figures...it's a tidyverse package!!
+
+### Practical advantages 
+
+* Incremental steps
+* Left to right operations with pipe!
+* Human readable
+* Consistency
+    * Many functions take data_frame first, then piping
+    * Easier to read, faster to write
+* The defaults aren't dumb (e.g. `utils::write.csv(row.names = FALSE)` = `readr::write_csv()`)
+
+***
+
+## `tibble`
+
+A less clunky version of data frames (also easier to build dummy data when you need help!)
+
+```{r, echo = TRUE}
+tdf = tibble(x = 1:1e4
+             , y = rnorm(1e4)) # == data_frame(x = 1:1e4, y = rnorm(1e4))
+tdf
+```
+
+### There's much more with tibbles! Check out the [manual!!](http://tibble.tidyverse.org/)
+
+***
+
+## Pipes ` %>% `
+
+On a mac type `shift + cmd + m`
+
+On a PC type `shift + ctrl + m`
+
+A pipe just sends the output from the lefthand side of a function to the first argument on the right hand side of the function. 
+
+With pipes
+
+```{r}
+sum(1:10) %>% 
+  sqrt()
+```
+
+Without pipes:
+
+```{r}
+sqrt(sum(1:10))
+```
+
+or
+
+```{r}
+x = sum(1:10)
+sqrt(x)
+```
+
+
+***
+
+## `dplyr`
+
+`dplyr` is used to manipulate data (in data frames...).
+
+Five core functions:
+
+* `filter`
+* `select`
+* `arrange`
+* `group_by`
+* `summarise`
+
+...there's a bunch more, too. 
+
+***
+
+I got some pigeon racing data from the internet. It's actually a mess, so to fix some of it real quick, let's `select` only the few variables we want. 
+
+```{r pigeon.data, message=FALSE, warning=FALSE}
+pg = read_csv("pigeon-racing.csv")
+```
+
+![](https://dcassetcdn.com/w1k/submissions/237500/237544_940e.jpg)
+
+Let's use `names()` to quickly see the names of the columns
+
+```{r}
+names(pg)
+```
+
+
+```{r}
+pigeon = select(pg, Breeder, Pigeon, Color, Sex, Speed)
+pigeon
+```
+
+Let's look at only fast pigeons with `filter`
+
+```{r}
+filter(pigeon, Speed > 150, Sex == "H")
+```
+
+With base R that's accomplished with...
+
+```{r}
+pigeon[pigeon$Speed > 150 & pigeon$Sex == "H", ]
+```
+
+Note that the `dplyr` version is less verbose, and doesn't require remembering which side of the comma you're on. Adding additional steps will also be simpler with the `tidy` format. 
+
+Let's look at only female pigeons, and then see which breeder had the fastest pigeons. We can do this adding `group_by` and `summarise`. And we're going to use pipes! 
+
+```{r}
+pigeon %>% 
+  filter(Sex == "H") %>% 
+  group_by(Breeder) %>% 
+  summarise(breed.speed = mean(Speed), entries = n()) %>% 
+  arrange(desc(breed.speed))
+```
+
+And, of course, if we wanted, we could have done the initial `select` all within a chunk. Plus it works nicely with `ggplot2`. 
+
+```{r}
+pg %>% 
+  select(Breeder, Pigeon, Color, Sex, Speed) %>% 
+  filter(Sex == "H") %>% 
+  group_by(Breeder) %>% 
+  summarise(breed.speed = mean(Speed), entries = n()) %>% 
+  arrange(desc(breed.speed)) %>% 
+  ggplot(aes(x=entries,y=breed.speed,color=Breeder)) +
+  geom_point() + 
+  labs(x = "Number of Pigeons a Breeder Entered", y = "Mean Speed of a Breeder's Pigeons") +
+  theme_classic() + theme(legend.position = "none")
+```
+
+***
+
+## `tidyr`
+
+`tidyr` can `gather` to make wide tables long, and `spread` to make long tables wide. You're most likely to use `gather`. 
+
+```{r}
+religion = read_csv("religion.csv")
+religion
+```
+
+
+There's really 3 variables: religion, income, and frequency (sample size, too)
+
+```{r}
+religion %>% 
+  gather(income, frequency, -religion, -sampleSize) %>% 
+  arrange(religion)
+```
+
+
+An example with real data we've all received before. 
+
+```{r}
+tricho = read_csv("trichorainfallpollinators.csv")
+tricho
+```
+
+```{r}
+
+tricho %>% 
+  gather(species, count, -num, -treat, -date, -time, -num_flow)
+
+```
+
+Now we can do useful things with it like find visit rate
+
+```{r, message=FALSE, warning=FALSE}
+tricho_tidy = tricho %>% 
+  gather(species, count, -num, -treat, -date, -time, -num_flow) %>% 
+  mutate(observation = paste(num,treat,date)) %>% 
+  group_by(observation, num_flow) %>% 
+  summarise(visits = sum(count)) %>% 
+  mutate(visit.rate = (visits/num_flow)/10)
+
+tricho_tidy
+
+require(plotly)
+require(viridis)
+ggplotly(ggplot(data = tricho_tidy, aes(x = num_flow, y = visit.rate, color = visits, text = paste("Observation:",observation))) + geom_point() + scale_color_viridis() + labs(x = "Number of Flowers", y = "Visits Per Flower Per Minute", color = "Raw Flowers Visited") + theme_classic() + theme(legend.position = "bottom"))
+```
+
+
+
+
+
+
+
+
